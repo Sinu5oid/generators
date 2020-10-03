@@ -17,7 +17,8 @@ func main() {
 	eg := generators.NewExponentialGenerator(ug, 345)
 	ng := generators.NewNormalGenerator(ug, 1, 2)
 
-	runDistributionAnalysis(cg,
+	runDistributionAnalysis(cg.Name(),
+		cg.String(),
 		func(f func() int) func() float64 {
 			return func() float64 {
 				return float64(f())
@@ -26,14 +27,14 @@ func main() {
 		maxIterations,
 		25,
 	)
-	runDistributionAnalysis(ug, ug.Float64, maxIterations, 25)
-	runDistributionAnalysis(eg, eg.ExpFloat64, maxIterations, 200)
-	runDistributionAnalysis(ng, ng.NormFloat64, maxIterations, 75)
+	runDistributionAnalysis(ug.Name(), ug.String(), ug.Float64, maxIterations, 25)
+	runDistributionAnalysis(eg.Name(), eg.String(), eg.ExpFloat64, maxIterations, 200)
+	runDistributionAnalysis(ng.Name(), ng.String(), ng.NormFloat64, maxIterations, 75)
 }
 
-func runDistributionAnalysis(distribution generators.DistributionGenerator, source func() float64, maxIterations int, colCount int) {
-	fmt.Printf("Running %q, target values count: %d\n", distribution.Name(), maxIterations)
-	fmt.Printf("Characteristics: %s\n", distribution)
+func runDistributionAnalysis(distributionName, characteristics string, source func() float64, maxIterations int, colCount int) {
+	fmt.Printf("Running %q, target values count: %d\n", distributionName, maxIterations)
+	fmt.Printf("Characteristics: %s\n", characteristics)
 	generatedValues := make(plotter.Values, 0, maxIterations)
 
 	for i := 0; i < maxIterations; i += 1 {
@@ -46,22 +47,22 @@ func runDistributionAnalysis(distribution generators.DistributionGenerator, sour
 		fmt.Printf("can't create plot: %s\n", err)
 		return
 	}
-	p.Title.Text = fmt.Sprintf("Histogram (%s)\n", distribution.Name())
+	p.Title.Text = fmt.Sprintf("Histogram (%s)\n%s", distributionName, characteristics)
 
 	h, err := plotter.NewHist(generatedValues, colCount)
 	if err != nil {
 		fmt.Printf("can't create histogram: %s\n", err)
 		return
 	}
-	h.Normalize(1)
+
 	p.Add(h)
 
-	filename := fmt.Sprintf("%s-hist.png", distribution.Name())
+	filename := fmt.Sprintf("%s-hist.png", distributionName)
 
 	if err := p.Save(10*vg.Inch, 5*vg.Inch, filename); err != nil {
 		fmt.Printf("can't save file: %s\n", err)
 		return
 	}
 
-	fmt.Printf("%q finished, artifact: %s\n\n", distribution.Name(), filename)
+	fmt.Printf("%q finished, artifact: %s\n\n", distributionName, filename)
 }

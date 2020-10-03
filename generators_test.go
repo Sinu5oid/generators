@@ -16,6 +16,12 @@ func BenchmarkCongruentialGenerator(b *testing.B) {
 	}
 }
 
+func BenchmarkStdCongruentialGenerator(b *testing.B) {
+	for i := 0; i < b.N; i += 1 {
+		_ = rand.Int()
+	}
+}
+
 func BenchmarkUniformGenerator(b *testing.B) {
 	s := rand.NewSource(rand.Int63())
 
@@ -35,6 +41,23 @@ func BenchmarkUniformGeneratorDefault(b *testing.B) {
 
 	for i := 0; i < b.N; i += 1 {
 		_ = g.Float64()
+	}
+}
+
+func BenchmarkStdUniformGenerator(b *testing.B) {
+	for i := 0; i < b.N; i += 1 {
+		_ = rand.Float64()
+	}
+}
+
+func BenchmarkChainedUniformGenerator(b *testing.B) {
+	cg := NewCongruentialGenerator(int(math.Pow(2, 32)), 1103515245, 12345, 0)
+	ug := NewUniformGenerator(cg, int(math.Pow(2, 32)))
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i += 1 {
+		_ = ug.Float64()
 	}
 }
 
@@ -60,6 +83,24 @@ func BenchmarkExponentialGeneratorDefault(b *testing.B) {
 	}
 }
 
+func BenchmarkStdExponentialGenerator(b *testing.B) {
+	for i := 0; i < b.N; i += 1 {
+		_ = rand.ExpFloat64()
+	}
+}
+
+func BenchmarkChainedExponentialGenerator(b *testing.B) {
+	cg := NewCongruentialGenerator(int(math.Pow(2, 32)), 1103515245, 12345, 0)
+	ug := NewUniformGenerator(cg, int(math.Pow(2, 32)))
+	eg := NewExponentialGenerator(ug, 345)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i += 1 {
+		_ = eg.ExpFloat64()
+	}
+}
+
 func BenchmarkNormalGenerator(b *testing.B) {
 	s := rand.NewSource(rand.Int63())
 
@@ -82,26 +123,9 @@ func BenchmarkNormalGeneratorDefault(b *testing.B) {
 	}
 }
 
-func BenchmarkChainedUniformGenerator(b *testing.B) {
-	cg := NewCongruentialGenerator(int(math.Pow(2, 32)), 1103515245, 12345, 0)
-	ug := NewUniformGenerator(cg, int(math.Pow(2, 32)))
-
-	b.ResetTimer()
-
+func BenchmarkStdNormalGenerator(b *testing.B) {
 	for i := 0; i < b.N; i += 1 {
-		_ = ug.Float64()
-	}
-}
-
-func BenchmarkChainedExponentialGenerator(b *testing.B) {
-	cg := NewCongruentialGenerator(int(math.Pow(2, 32)), 1103515245, 12345, 0)
-	ug := NewUniformGenerator(cg, int(math.Pow(2, 32)))
-	eg := NewExponentialGenerator(ug, 345)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i += 1 {
-		_ = eg.ExpFloat64()
+		_ = rand.NormFloat64()
 	}
 }
 
