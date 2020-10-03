@@ -7,6 +7,15 @@ import (
 	"math/rand"
 )
 
+type GeneratorName string
+
+const (
+	Congruential GeneratorName = "congruential"
+	Uniform      GeneratorName = "uniform"
+	Exponential  GeneratorName = "exponential"
+	Normal       GeneratorName = "normal"
+)
+
 type IntGenerator interface{ Int() int }
 
 type Float64Generator interface{ Float64() float64 }
@@ -15,7 +24,13 @@ type ExpFloat64Generator interface{ ExpFloat64() float64 }
 
 type NormFloat64Generator interface{ NormFloat64() float64 }
 
+type DistributionGenerator interface {
+	String() string
+	Name() string
+}
+
 type CongruentialGenerator struct {
+	name    GeneratorName
 	n       int
 	m       int
 	a       int
@@ -25,6 +40,7 @@ type CongruentialGenerator struct {
 
 func NewCongruentialGenerator(modulus int, multiplier int, additiveComponent int, initialValue int) *CongruentialGenerator {
 	return &CongruentialGenerator{
+		name:    Congruential,
 		n:       modulus,
 		m:       multiplier,
 		a:       additiveComponent,
@@ -33,10 +49,14 @@ func NewCongruentialGenerator(modulus int, multiplier int, additiveComponent int
 	}
 }
 
-func (cg *CongruentialGenerator) String() string {
-	d := make(map[string]interface{}, 4)
+func (cg *CongruentialGenerator) Name() string {
+	return string(cg.name)
+}
 
-	d["distributionName"] = "congruential"
+func (cg *CongruentialGenerator) String() string {
+	d := make(map[string]interface{}, 5)
+
+	d["distributionName"] = cg.name
 	d["modulus"] = cg.n
 	d["multiplier"] = cg.m
 	d["additiveComponent"] = cg.a
@@ -57,14 +77,19 @@ func (cg *CongruentialGenerator) Int() int {
 }
 
 type UniformGenerator struct {
-	g IntGenerator
-	m int
+	name GeneratorName
+	g    IntGenerator
+	m    int
+}
+
+func (ug *UniformGenerator) Name() string {
+	return string(ug.name)
 }
 
 func (ug *UniformGenerator) String() string {
 	d := make(map[string]interface{}, 2)
 
-	d["distributionName"] = "uniform"
+	d["distributionName"] = ug.name
 	d["modulus"] = ug.m
 
 	if b, err := json.Marshal(d); err != nil {
@@ -75,13 +100,14 @@ func (ug *UniformGenerator) String() string {
 }
 
 func NewUniformGeneratorDefault() *UniformGenerator {
-	return &UniformGenerator{g: rand.New(rand.NewSource(rand.Int63())), m: math.MaxInt32}
+	return &UniformGenerator{name: Uniform, g: rand.New(rand.NewSource(rand.Int63())), m: math.MaxInt32}
 }
 
 func NewUniformGenerator(generator IntGenerator, modulus int) *UniformGenerator {
 	return &UniformGenerator{
-		g: generator,
-		m: modulus,
+		name: Uniform,
+		g:    generator,
+		m:    modulus,
 	}
 }
 
@@ -94,14 +120,19 @@ func (ug *UniformGenerator) Float64() float64 {
 }
 
 type ExponentialGenerator struct {
-	g Float64Generator
-	l float64
+	name GeneratorName
+	g    Float64Generator
+	l    float64
+}
+
+func (eg *ExponentialGenerator) Name() string {
+	return string(eg.name)
 }
 
 func (eg *ExponentialGenerator) String() string {
 	d := make(map[string]interface{}, 2)
 
-	d["distributionName"] = "exponential"
+	d["distributionName"] = eg.name
 	d["rate"] = eg.l
 
 	if b, err := json.Marshal(d); err != nil {
@@ -112,11 +143,11 @@ func (eg *ExponentialGenerator) String() string {
 }
 
 func NewExponentialGeneratorDefault() *ExponentialGenerator {
-	return &ExponentialGenerator{g: rand.New(rand.NewSource(rand.Int63())), l: 1}
+	return &ExponentialGenerator{name: Exponential, g: rand.New(rand.NewSource(rand.Int63())), l: 1}
 }
 
 func NewExponentialGenerator(generator Float64Generator, rate float64) *ExponentialGenerator {
-	return &ExponentialGenerator{g: generator, l: rate}
+	return &ExponentialGenerator{name: Exponential, g: generator, l: rate}
 }
 
 func (eg *ExponentialGenerator) ExpFloat64() float64 {
@@ -124,15 +155,20 @@ func (eg *ExponentialGenerator) ExpFloat64() float64 {
 }
 
 type NormalGenerator struct {
+	name   GeneratorName
 	g      Float64Generator
 	stdDev float64
 	mean   float64
 }
 
+func (ng *NormalGenerator) Name() string {
+	return string(ng.name)
+}
+
 func (ng *NormalGenerator) String() string {
 	d := make(map[string]interface{}, 3)
 
-	d["distributionName"] = "normal"
+	d["distributionName"] = ng.name
 	d["standardDeviation"] = ng.stdDev
 	d["mean"] = ng.mean
 
@@ -144,11 +180,11 @@ func (ng *NormalGenerator) String() string {
 }
 
 func NewNormalGeneratorDefault() *NormalGenerator {
-	return &NormalGenerator{g: rand.New(rand.NewSource(rand.Int63())), stdDev: 1, mean: 0}
+	return &NormalGenerator{name: Normal, g: rand.New(rand.NewSource(rand.Int63())), stdDev: 1, mean: 0}
 }
 
 func NewNormalGenerator(generator Float64Generator, standardDeviation float64, mean float64) *NormalGenerator {
-	return &NormalGenerator{g: generator, stdDev: standardDeviation, mean: mean}
+	return &NormalGenerator{name: Normal, g: generator, stdDev: standardDeviation, mean: mean}
 }
 
 func (ng *NormalGenerator) NormFloat64() float64 {

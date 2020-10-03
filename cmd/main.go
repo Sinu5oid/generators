@@ -17,22 +17,23 @@ func main() {
 	eg := generators.NewExponentialGenerator(ug, 345)
 	ng := generators.NewNormalGenerator(ug, 1, 2)
 
-	runDistributionAnalysis("congruential",
-		func (f func() int) func() float64 {
+	runDistributionAnalysis(cg,
+		func(f func() int) func() float64 {
 			return func() float64 {
 				return float64(f())
 			}
 		}(cg.Int),
 		maxIterations,
-		100,
+		25,
 	)
-	runDistributionAnalysis("uniform", ug.Float64, maxIterations, 100)
-	runDistributionAnalysis("exponential", eg.ExpFloat64, maxIterations, 200)
-	runDistributionAnalysis("normal", ng.NormFloat64, maxIterations, 75)
+	runDistributionAnalysis(ug, ug.Float64, maxIterations, 25)
+	runDistributionAnalysis(eg, eg.ExpFloat64, maxIterations, 200)
+	runDistributionAnalysis(ng, ng.NormFloat64, maxIterations, 75)
 }
 
-func runDistributionAnalysis(distributionName string, source func() float64, maxIterations int, colCount int) {
-	fmt.Printf("Running %q, target values count: %d\n", distributionName, maxIterations)
+func runDistributionAnalysis(distribution generators.DistributionGenerator, source func() float64, maxIterations int, colCount int) {
+	fmt.Printf("Running %q, target values count: %d\n", distribution.Name(), maxIterations)
+	fmt.Printf("Characteristics: %s\n", distribution)
 	generatedValues := make(plotter.Values, 0, maxIterations)
 
 	for i := 0; i < maxIterations; i += 1 {
@@ -45,7 +46,7 @@ func runDistributionAnalysis(distributionName string, source func() float64, max
 		fmt.Printf("can't create plot: %s\n", err)
 		return
 	}
-	p.Title.Text = fmt.Sprintf("Histogram (%s)\n", distributionName)
+	p.Title.Text = fmt.Sprintf("Histogram (%s)\n", distribution.Name())
 
 	h, err := plotter.NewHist(generatedValues, colCount)
 	if err != nil {
@@ -55,12 +56,12 @@ func runDistributionAnalysis(distributionName string, source func() float64, max
 	h.Normalize(1)
 	p.Add(h)
 
-	filename := fmt.Sprintf("%s-hist.png", distributionName)
+	filename := fmt.Sprintf("%s-hist.png", distribution.Name())
 
 	if err := p.Save(10*vg.Inch, 5*vg.Inch, filename); err != nil {
 		fmt.Printf("can't save file: %s\n", err)
 		return
 	}
 
-	fmt.Printf("%q finished, artifact: %s\n\n", distributionName, filename)
+	fmt.Printf("%q finished, artifact: %s\n\n", distribution.Name(), filename)
 }
