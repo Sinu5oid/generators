@@ -15,7 +15,11 @@ func main() {
 	cg := generators.NewCongruentialGenerator(modulus, 1103515245, 12345, 0)
 	ug := generators.NewUniformGenerator(cg, modulus)
 	eg := generators.NewExponentialGenerator(ug, 345)
-	ng := generators.NewNormalGenerator(ug, 1, 2)
+
+	// second pair of independent CG and UG for normal distribution
+	cg2 := generators.NewCongruentialGenerator(modulus, 134775813, 1, 3)
+	ug2 := generators.NewUniformGenerator(cg2, modulus)
+	ng := generators.NewNormalGenerator(ug, ug2, 1, 2)
 
 	runDistributionAnalysis(cg.Name(),
 		cg.String(),

@@ -157,6 +157,7 @@ func (eg *ExponentialGenerator) ExpFloat64() float64 {
 type NormalGenerator struct {
 	name   GeneratorName
 	g      Float64Generator
+	g2     Float64Generator
 	stdDev float64
 	mean   float64
 }
@@ -180,16 +181,16 @@ func (ng *NormalGenerator) String() string {
 }
 
 func NewNormalGeneratorDefault() *NormalGenerator {
-	return &NormalGenerator{name: Normal, g: rand.New(rand.NewSource(rand.Int63())), stdDev: 1, mean: 0}
+	return &NormalGenerator{name: Normal, g: rand.New(rand.NewSource(rand.Int63())), g2: rand.New(rand.NewSource(rand.Int63())), stdDev: 1, mean: 0}
 }
 
-func NewNormalGenerator(generator Float64Generator, standardDeviation float64, mean float64) *NormalGenerator {
-	return &NormalGenerator{name: Normal, g: generator, stdDev: standardDeviation, mean: mean}
+func NewNormalGenerator(generator Float64Generator, secondGenerator Float64Generator, standardDeviation float64, mean float64) *NormalGenerator {
+	return &NormalGenerator{name: Normal, g: generator, g2: secondGenerator, stdDev: standardDeviation, mean: mean}
 }
 
 func (ng *NormalGenerator) NormFloat64() float64 {
 	v1 := 2*ng.g.Float64() - 1
-	v2 := 2*ng.g.Float64() - 1
+	v2 := 2*ng.g2.Float64() - 1
 	S := math.Pow(v1, 2) + math.Pow(v2, 2)
 
 	if S >= 1 {

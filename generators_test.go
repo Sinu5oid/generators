@@ -103,8 +103,9 @@ func BenchmarkChainedExponentialGenerator(b *testing.B) {
 
 func BenchmarkNormalGenerator(b *testing.B) {
 	s := rand.NewSource(rand.Int63())
+	s2 := rand.NewSource(rand.Int63())
 
-	g := NewNormalGenerator(rand.New(s), 1, 0)
+	g := NewNormalGenerator(rand.New(s), rand.New(s2), 1, 0)
 
 	b.ResetTimer()
 
@@ -132,7 +133,11 @@ func BenchmarkStdNormalGenerator(b *testing.B) {
 func BenchmarkChainedNormalGenerator(b *testing.B) {
 	cg := NewCongruentialGenerator(int(math.Pow(2, 32)), 1103515245, 12345, 0)
 	ug := NewUniformGenerator(cg, int(math.Pow(2, 32)))
-	ng := NewNormalGenerator(ug, 1, 2)
+
+	cg2 := NewCongruentialGenerator(int(math.Pow(2, 32)), 134775813, 1, 3)
+	ug2 := NewUniformGenerator(cg2, int(math.Pow(2, 32)))
+
+	ng := NewNormalGenerator(ug, ug2, 1, 2)
 
 	b.ResetTimer()
 
