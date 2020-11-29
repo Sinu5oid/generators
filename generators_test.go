@@ -145,3 +145,42 @@ func BenchmarkChainedNormalGenerator(b *testing.B) {
 		_ = ng.NormFloat64()
 	}
 }
+
+func BenchmarkTwoDimensionalGenerator(b *testing.B) {
+	s := rand.NewSource(rand.Int63())
+	s2 := rand.NewSource(rand.Int63())
+
+	tdg := NewTwoDimensionalGenerator(rand.New(s), rand.New(s2), 1, 1, 0, 0, 0.5)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i += 1 {
+		_ = tdg.TwoDimensionalFloat64s()
+	}
+}
+
+func BenchmarkChainedTwoDimensionalGenerator(b *testing.B) {
+	cg := NewCongruentialGenerator(int(math.Pow(2, 32)), 1103515245, 12345, 0)
+	ug := NewUniformGenerator(cg, int(math.Pow(2, 32)))
+
+	cg2 := NewCongruentialGenerator(int(math.Pow(2, 32)), 134775813, 1, 3)
+	ug2 := NewUniformGenerator(cg2, int(math.Pow(2, 32)))
+
+	tdg := NewTwoDimensionalGenerator(ug, ug2, 1, 1, 0, 0, 0.5)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i += 1 {
+		_ = tdg.TwoDimensionalFloat64s()
+	}
+}
+
+func BenchmarkTwoDimensionalGeneratorDefault(b *testing.B) {
+	tdg := NewTwoDimensionalGeneratorDefault()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i += 1 {
+		_ = tdg.TwoDimensionalFloat64s()
+	}
+}
