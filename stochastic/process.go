@@ -1,74 +1,114 @@
 package stochastic
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 )
 
-type correlationFn func(int, int) float64
-type meanFn func(int) float64
+type CorrelationFn func(int, int) float64
+type MeanFn func(int) float64
 
-// buildModel
+// buildImplementation
 //
 // m - mean function m(t)
 //
 // k - correlation function K(t, t')
 //
-// h - step
-//
 // n - time steps count
-func buildModel(m meanFn, k correlationFn, n int) {
+func buildImplementation(m MeanFn, k CorrelationFn, n int, trySafeMath bool) *[]float64 {
 	devs := make([]float64, 0, n)
 	funcs := make([][]float64, 0, n)
 
 	for i := 0; i < n; i += 1 {
-		devs = append(devs, *getDev(k, i, &devs, &funcs))
-		funcs = append(funcs, *getFuncRow(k, i, n, &devs, &funcs))
+		devs = append(devs, *getDev(k, i, &devs, &funcs, trySafeMath))
+		funcs = append(funcs, *getFuncRow(k, i, n, &devs, &funcs, trySafeMath))
 	}
 
 	randoms := make([]float64, 0, n)
-	for i := 0; i < n; i++ {
-		randoms = append(randoms, rand.NormFloat64()*math.Sqrt(devs[i]))
+	for i := 0; i < n; i += 1 {
+		randoms = append(randoms, rand.NormFloat64()*math.Sqrt((devs)[i]))
 	}
 
-	//randoms := []float64{-0.234158, -0.428654, 0.50671, 0.257188, -0.602093}
-	impl := *getImpl(m, n, &funcs, &randoms)
-
-	fmt.Println("Devs:")
-	fmt.Println(devs)
-	fmt.Println("Funcs:")
-	fmt.Println(funcs)
-	fmt.Println("Impls:")
-	fmt.Println(impl)
+	return getImpl(m, n, &funcs, &randoms)
 }
 
-func getDev(k correlationFn, i int, prevDevs *[]float64, prevFuncs *[][]float64) *float64 {
-	res := k(i, i)
+// buildImplementationTemplate
+//
+// k - correlation function K(t, t')
+//
+// n - time steps count
+func buildImplementationTemplate(
+	k CorrelationFn,
+	n int,
+	trySafeMath bool,
+) (*[]float64, *[][]float64) {
+	devs := make([]float64, 0, n)
+	funcs := make([][]float64, 0, n)
 
-	for k := 0; k <= i-1; k += 1 {
-		res = res - math.Pow((*prevFuncs)[k][i], 2)*(*prevDevs)[k]
+	for i := 0; i < n; i += 1 {
+		devs = append(devs, *getDev(k, i, &devs, &funcs, trySafeMath))
+		funcs = append(funcs, *getFuncRow(k, i, n, &devs, &funcs, trySafeMath))
+	}
+
+	return &devs, &funcs
+}
+
+func getDev(
+	k CorrelationFn,
+	i int,
+	prevDevs *[]float64,
+	prevFuncs *[][]float64,
+	trySafeMath bool,
+) *float64 {
+	kVal := k(i, i)
+	sum := 0.0
+
+	for x := 0; x < i; x += 1 {
+		sum += math.Pow((*prevFuncs)[x][i], 2) * (*prevDevs)[x]
+	}
+
+	res := kVal - sum
+
+	// underflow detection & protection
+	if (sum > kVal || math.IsNaN(res)) && trySafeMath {
+		res = 0
 	}
 
 	return &res
 }
 
-func getFuncRow(k correlationFn, i int, n int, prevDevs *[]float64, prevFuncs *[][]float64) *[]float64 {
+func getFuncRow(
+	k CorrelationFn,
+	i, n int,
+	prevDevs *[]float64,
+	prevFuncs *[][]float64,
+	trySafeMath bool,
+) *[]float64 {
 	funcs := make([]float64, 0, n)
 	for j := 0; j < n; j += 1 {
-		funcs = append(funcs, getFunc(k, i, j, prevDevs, prevFuncs))
+		funcs = append(funcs, getFunc(k, i, j, prevDevs, prevFuncs, trySafeMath))
 	}
 
 	return &funcs
 }
 
-func getFunc(k correlationFn, i int, j int, prevDevs *[]float64, prevFuncs *[][]float64) float64 {
+func getFunc(
+	k CorrelationFn,
+	i, j int,
+	prevDevs *[]float64,
+	prevFuncs *[][]float64,
+	trySafeMath bool,
+) float64 {
 	switch {
 	case i == j:
 		return 1
 	case i > j:
 		return 0
 	default:
+		if trySafeMath && (*prevDevs)[i] == 0 {
+			return 0
+		}
+
 		dividend := k(i, j)
 		for x := 0; x < i; x += 1 {
 			dividend = dividend - (*prevFuncs)[x][i]*(*prevFuncs)[x][j]*(*prevDevs)[x]
@@ -78,7 +118,12 @@ func getFunc(k correlationFn, i int, j int, prevDevs *[]float64, prevFuncs *[][]
 	}
 }
 
-func getImpl(m meanFn, n int, funcs *[][]float64, randoms *[]float64) *[]float64 {
+func getImpl(
+	m MeanFn,
+	n int,
+	funcs *[][]float64,
+	randoms *[]float64,
+) *[]float64 {
 	impls := make([]float64, 0, n)
 
 	for i := 0; i < n; i += 1 {
@@ -94,26 +139,28 @@ func getImpl(m meanFn, n int, funcs *[][]float64, randoms *[]float64) *[]float64
 	return &impls
 }
 
-func getT(i int, h float64) float64 {
-	return float64(i) * h
+func BuildImplementationGenerator(
+	mFn MeanFn,
+	kFn CorrelationFn,
+	n int,
+	trySafeMath bool,
+) func() *[]float64 {
+	devs, funcs := buildImplementationTemplate(kFn, n, trySafeMath)
+
+	return func() *[]float64 {
+		randoms := make([]float64, 0, n)
+		for i := 0; i < n; i += 1 {
+			randoms = append(randoms, rand.NormFloat64()*math.Sqrt((*devs)[i]))
+		}
+
+		return getImpl(mFn, n, funcs, &randoms)
+	}
 }
 
-func BuildModel() {
-	m := 1.0
-	n := 5
-	h := 0.25
+func BuildImplementation(mFn MeanFn, kFn CorrelationFn, n int, trySafeMath bool) *[]float64 {
+	return buildImplementation(mFn, kFn, n, trySafeMath)
+}
 
-	mFn := func(h float64) func(int) float64 {
-		return func(i int) float64 {
-			return m
-		}
-	}(h)
-
-	kFn := func(h float64) func(int, int) float64 {
-		return func(i int, i2 int) float64 {
-			return 1 / (1 + 5*math.Abs(getT(i, h)-getT(i2, h)))
-		}
-	}(h)
-
-	buildModel(mFn, kFn, n)
+func GetT(i int, h float64) float64 {
+	return float64(i) * h
 }
