@@ -9,6 +9,8 @@ A package duplicating standard 'rand' package
     * `cmd/two_dimensional` contains demo usage of two-dimensional distribution generators
 * package `stat`: statistics analysis package (contains Pearson test support for single-component distributions)
     * `cmd` contains demo usage of Pearson test function and utilities
+* package `stochastic`: modeling of static stochastic processes
+  * `cmd` contains demo usage of modeling
 
 ## Usage in go
 
