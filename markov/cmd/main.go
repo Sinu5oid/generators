@@ -15,6 +15,9 @@ import (
 
 func main() {
 	viewHTML := flag.Bool("html", false, "use html as a result view")
+
+	flag.Parse()
+
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	logger := log.New(os.Stdout, "", 0)
@@ -92,8 +95,8 @@ func main() {
 
 	// get theoretical p(t)
 	logger.Println("started computing theoretical p(t)")
-	tprobs := make([][]float64, 0, sc)
-	for t := 0; t < sc; t++ {
+	tprobs := make([][]float64, 0, sc+1)
+	for t := -1; t < sc; t++ {
 		tprobs = append(tprobs, e.TProb(t))
 	}
 	logger.Println("finished computing theoretical p(t)")
@@ -108,8 +111,8 @@ func main() {
 
 	// get empiric p*(t)
 	logger.Println("started computing empiric p*(t)")
-	eprobs := make([][]float64, 0, sc)
-	for t := 0; t < sc; t++ {
+	eprobs := make([][]float64, 0, sc+1)
+	for t := 0; t < sc+1; t++ {
 		eprobs = append(eprobs, chain.EProb(impls, len(tm), t, ic))
 	}
 	logger.Println("finished computing empiric p*(t)")

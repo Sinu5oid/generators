@@ -27,7 +27,7 @@ func (e *Engine) WithSteps(steps int) *Engine {
 }
 
 func (e Engine) NextImpl() []int {
-	res := make([]int, 0, e.sc)
+	res := make([]int, 0, e.sc+1)
 
 	curr := e.s
 	res = append(res, curr)

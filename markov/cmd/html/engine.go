@@ -53,21 +53,58 @@ const tmplHTML = `
 </head>
 	<body>
 		<style>
+			body {
+				width: 100%;
+				height: 100%;
+				margin: 0;
+				padding: 0;
+				overflow: hidden;
+			}
+			.page-container {
+				display: flex;
+				overflow: hidden;
+				width: 100%;
+				height: 100vh;
+			}
+			.page-container > div {
+				width: 50%;
+			}
+			.left {
+				overflow-y: auto;
+				scrollbar-width: thin;
+				padding: 1rem;
+				padding-bottom: 2rem;
+			}
+			.left > div {
+				margin-bottom: 1rem;
+			}
+			.right {
+				min-height: 500px;
+				max-height: 100vh;
+			}
+			.container {
+				background-color: #fafafa;
+				width: 100%;
+				height: 100%;
+				min-height: 500px;
+				max-height: 100vh;
+			}
+			#graph-container{
+				width: 100%;
+				height: 100%;
+				min-height: 500px;
+			}
 			.table {
 			  font-family: Arial, Helvetica, sans-serif;
 			  border-collapse: collapse;
 			  width: 100%;
 			}
-			
 			.table td, .table th {
 			  border: 1px solid #ddd;
 			  padding: 8px;
 			}
-			
 			.table tr:nth-child(even){background-color: #f2f2f2;}
-			
 			.table tr:hover {background-color: #ddd;}
-			
 			.table th {
 			  padding-top: 12px;
 			  padding-bottom: 12px;
@@ -75,104 +112,78 @@ const tmplHTML = `
 			  background-color: #4CAF50;
 			  color: white;
 			}
-			</style>
-		<div class="left">
-			<div>
-				<table class="table">
-					<thead>
-						<tr>
-							<th>#</td>
-							<th>Implementation</td>
-						</tr>
-					</thead>
-					<tbody>
-						{{ range $index, $element := .Implementations }}
-						<tr>
-							<td>{{$index}}</td>
-							<td>
-								{{ range $element }}
-									{{ . }} →
+		</style>
+		<div class="page-container">
+			<div class="left">
+				<div>
+					<div>
+						<table class="table">
+							<thead>
+								<tr>
+									<th>#</td>
+									<th>Implementation</td>
+								</tr>
+							</thead>
+							<tbody>
+								{{ range $index, $element := .Implementations }}
+								<tr>
+									<td>{{$index}}</td>
+									<td>
+										{{ range $element }}
+											{{ . }} →
+										{{ end }}
+										...
+									</td>
+								</tr>
+								{{ end}}
+							</tbody>
+						</table>
+					</div>
+					{{ range $index, $info :=  .Diffs }}
+						<div>
+							<h3>Step #{{ $index }}</h3>
+							<table class="table">
+								<thead>
+									<tr>
+										<th>#</td>
+										<th>theoretical</td>
+										<th>empiric</td>
+										<th>diff</td>
+									</tr>
+								</thead>
+								<tbody>
+								{{ range $index2, $i := $info }}
+									<tr>
+										<td>{{ $index2 }}</td>
+										<td>{{ formatFloat $i.T 6 }}</td>
+										<td>{{ formatFloat $i.E 6 }}</td>
+										<td>{{ formatFloat $i.D 6 }}</td>
+									</tr>
 								{{ end }}
-								...
-							</td>
-						</tr>
-						{{ end}}
-					</tbody>
-				</table>
-			</div>
-			{{ range $index, $info :=  .Diffs }}
-				<div class="table">
-					<h3>Step #{{ $index }}</h3>
-					<table class="fl-table">
-						<thead>
-							<tr>
-								<th>#</td>
-								<th>theoretical</td>
-								<th>empiric</td>
-								<th>diff</td>
-							</tr>
-						</thead>
-						<tbody>
-						{{ range $index2, $i := $info }}
-							<tr>
-								<td>{{ $index2 }}</td>
-								<td>{{ formatFloat $i.T 6 }}</td>
-								<td>{{ formatFloat $i.E 6 }}</td>
-								<td>{{ formatFloat $i.D 6 }}</td>
-							</tr>
-						{{ end }}
-						</tbody>
-					</table>
+								</tbody>
+							</table>
+						</div>
+					{{ end }}
 				</div>
-			{{ end }}
-		</div>
-		<div class="right">
-			<style>
-				body {
-				  display: flex;
-				  width: 100%;
-				  height: 100%;
-				  margin: 0;
-				  padding: 0;
-				}
-				body > * {
-				  width: 50%;
-				}
-				.left {
-				  border-right: 1px solid black;
-				}
-				.right {
-					min-height: 500px;
-				}
-				.container {
-				  	background-color: #fafafa;
-				  	width: 100%;
-				  	height: 100%;
-					min-height: 500px;
-				  	max-height: 100vh;
-				}
-				#graph-container{
-					width: 100%;
-					height: 100%;
-					min-height: 500px;
-				}
-			</style>
-			<div class="container">
-			  <div id="graph-container"></div>
+			</div>
+			<div class="right">
+				<div class="container">
+				  <div id="graph-container"></div>
+				</div>
 			</div>
 		</div>
 		<script>
 			s = new sigma({
-			  graph: JSON.parse({{toJSON .Graph}}),
-			  renderer: {
-				container: document.getElementById('graph-container'),
-				type: 'canvas'
-			  },
-			  settings: {
-				edgeLabelSize: 'proportional',
-				enableEdgeHovering: true,
-				edgeHoverSizeRatio: 2
-			  }
+				graph: JSON.parse({{toJSON .Graph}}),
+				renderer: {
+					container: document.getElementById('graph-container'),
+					type: 'canvas'
+				},
+				settings: {
+					edgeLabelSize: 'proportional',
+					enableEdgeHovering: true,
+					edgeHoverSizeRatio: 2
+				}
 			});
 			const dragListener = sigma.plugins.dragNodes(s, s.renderers[0]);
 		</script>
