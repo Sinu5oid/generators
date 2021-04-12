@@ -2,6 +2,7 @@ package html
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -16,6 +17,9 @@ import (
 var htmlTemplate = template.Must(template.New("html").Funcs(map[string]interface{}{
 	"formatFloat": func(f float64, decimals int) string {
 		return strings.Replace(strconv.FormatFloat(f, 'f', decimals, 64), ".", ",", 1)
+	},
+	"formatFloatSigned": func(f float64) string {
+		return strings.Replace(fmt.Sprintf("%+.6f", f), ".", ",", 1)
 	},
 	"toJSON": func(v interface{}) string {
 		m, _ := json.Marshal(v)
@@ -157,7 +161,7 @@ const tmplHTML = `
 										<td>{{ $index2 }}</td>
 										<td>{{ formatFloat $i.T 6 }}</td>
 										<td>{{ formatFloat $i.E 6 }}</td>
-										<td>{{ formatFloat $i.D 6 }}</td>
+										<td>{{ formatFloatSigned $i.D }}</td>
 									</tr>
 								{{ end }}
 								</tbody>
