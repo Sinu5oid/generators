@@ -15,10 +15,10 @@ type Engine struct {
 	cache *funcache.Cache
 }
 
-func (e Engine) TransitionGraph() [][]float64 {
+func (e Engine) TransitionGraph() Graph {
 	return e.cache.Wrap(func() interface{} {
-		return e.tm
-	}).([][]float64)
+		return NewGraph(e.tm)
+	}).(Graph)
 }
 
 func (e *Engine) WithSteps(steps int) *Engine {
@@ -30,6 +30,7 @@ func (e Engine) NextImpl() []int {
 	res := make([]int, 0, e.sc)
 
 	curr := e.s
+	res = append(res, curr)
 	for i := 0; i < e.sc; i++ {
 		row := e.tm[curr]
 		if floats.EqualApprox([]float64{row[curr]}, []float64{1}, 1e-25) {

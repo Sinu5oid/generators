@@ -1,10 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"github.com/Sinu5oid/generators/markov/chain"
-	"golang.org/x/exp/rand"
+	"github.com/Sinu5oid/generators/markov/cmd/diff"
+	"github.com/Sinu5oid/generators/markov/cmd/html"
 	"log"
+	"math/rand"
 	"os"
 	"runtime"
 	"sync"
@@ -12,14 +14,11 @@ import (
 )
 
 func main() {
-	rand.Seed(uint64(time.Now().UnixNano()))
+	viewHTML := flag.Bool("html", false, "use html as a result view")
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	logger := log.New(os.Stdout, "", 0)
 	started := time.Now()
-
-	defer func() {
-		logger.Println("finished in", time.Since(started))
-	}()
 
 	// transition matrix
 	tm := [][]float64{
@@ -43,12 +42,6 @@ func main() {
 	cpus := runtime.NumCPU()
 
 	e := chain.NewEngine(tm, s)
-
-	// build transition graph (adjacency list)
-	graph := e.TransitionGraph()
-	fmt.Println("transition graph:", graph)
-
-	// do [0-9] imitation x 1000 implementations
 	e = e.WithSteps(sc)
 
 	implsc := make(chan []int, ic)
@@ -121,12 +114,29 @@ func main() {
 	}
 	logger.Println("finished computing empiric p*(t)")
 
+	diffs := make([][]diff.Info, 0, sc)
 	logger.Println("comparison")
 	for t := 0; t < sc; t++ {
+		diffsPart := make([]diff.Info, 0, len(tm))
 		logger.Println("step #", t)
-		for _, i := range diff(tprobs[t], eprobs[t]) {
-			logger.Printf("t:\t%.6f\t|\te:\t%.6f\t(%+.6f)", i.t, i.e, i.diff)
+		for _, i := range diff.Get(tprobs[t], eprobs[t]) {
+			diffsPart = append(diffsPart, i)
+			logger.Printf("t:\t%.6f\t|\te:\t%.6f\t(%+.6f)", i.T, i.E, i.D)
 		}
 		logger.Println("-----")
+		diffs = append(diffs, diffsPart)
+	}
+
+	logger.Println("finished in", time.Since(started))
+
+	if *viewHTML {
+		err := html.Output(logger, html.PageData{
+			Graph:           e.TransitionGraph(),
+			Implementations: impls[:20],
+			Diffs:           diffs,
+		})
+		if err != nil {
+			logger.Println("failed to generate html output", err)
+		}
 	}
 }
